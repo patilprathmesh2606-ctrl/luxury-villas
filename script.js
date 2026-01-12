@@ -1,48 +1,11 @@
-
-// Configuration
-const GOOGLE_SCRIPT_URL = 'YOUR_GOOGLE_SCRIPT_URL_HERE'; // You'll get this from Google Apps Script
+// Configuration - Update this with your Google Apps Script URL
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzUrb178Ikpx_Tklo8t08GxCklI_7X369teWnd_bPqzAWTALNi7ts2K51dmx01qwKA2-Q/exec'; // Get this from Google Apps Script deployment
 
 // Global Variables
 let villas = [];
 let currentUser = null;
 let isAdminLoggedIn = false;
 let currentVillaId = null;
-
-// Sample data (fallback if Google Sheets is not set up)
-const sampleVillas = [
-    {
-        id: 1,
-        name: "Mountain View Retreat",
-        place: "Aspen, Colorado",
-        price: 65000,
-        image: "https://images.unsplash.com/photo-1518780664697-55e3ad937233?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-        images: [
-            "https://images.unsplash.com/photo-1518780664697-55e3ad937233?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-            "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80"
-        ],
-        features: ["Swimming Pool", "Mountain View", "Fireplace", "3 Bedrooms", "Hot Tub"],
-        safety: ["24/7 Security", "Smoke Detectors", "First Aid Kit"],
-        reviews: [
-            {name: "Sarah Johnson", date: "May 2023", rating: 5, text: "Absolutely stunning villa!"}
-        ]
-    },
-    {
-        id: 2,
-        name: "Lakefront Paradise",
-        place: "Lake Tahoe, California",
-        price: 75000,
-        image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-        images: [
-            "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-            "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80"
-        ],
-        features: ["Lake View", "Private Dock", "Boating", "4 Bedrooms"],
-        safety: ["Security Cameras", "Fire Alarm System", "First Aid Kit"],
-        reviews: [
-            {name: "Jennifer Lee", date: "June 2023", rating: 5, text: "Perfect lakefront location!"}
-        ]
-    }
-];
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -65,33 +28,89 @@ document.addEventListener('DOMContentLoaded', function() {
 async function loadVillas() {
     try {
         // Try to load from Google Sheets
-        if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== 'YOUR_GOOGLE_SCRIPT_URL_HERE') {
+        if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
             const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getVillas`);
             if (response.ok) {
                 const data = await response.json();
                 villas = data.villas || [];
+                
+                if (villas.length > 0) {
+                    renderVillaCards();
+                    return;
+                }
             }
         }
         
-        // If no villas loaded, use sample data
-        if (!villas || villas.length === 0) {
-            villas = [...sampleVillas];
-            showNotification('Using sample data. Set up Google Sheets for live data.', 'info');
+        // If no villas loaded, check localStorage
+        const savedVillas = localStorage.getItem('villas');
+        if (savedVillas) {
+            villas = JSON.parse(savedVillas);
+        }
+        
+        // If still no villas, use sample data
+        if (villas.length === 0) {
+            villas = getSampleVillas();
         }
         
         renderVillaCards();
+        
     } catch (error) {
         console.error('Error loading villas:', error);
-        villas = [...sampleVillas];
+        
+        // Fallback to localStorage or sample data
+        const savedVillas = localStorage.getItem('villas');
+        if (savedVillas) {
+            villas = JSON.parse(savedVillas);
+        } else {
+            villas = getSampleVillas();
+        }
+        
         renderVillaCards();
-        showNotification('Using sample data. Set up Google Sheets for live data.', 'info');
     }
 }
 
-// Save villa to Google Sheets
+// Get sample villas (fallback data)
+function getSampleVillas() {
+    return [
+        {
+            id: 1,
+            name: "Mountain View Retreat",
+            place: "Aspen, Colorado",
+            price: 65000,
+            image: "https://images.unsplash.com/photo-1518780664697-55e3ad937233?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
+            images: [
+                "https://images.unsplash.com/photo-1518780664697-55e3ad937233?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
+                "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80"
+            ],
+            features: ["Swimming Pool", "Mountain View", "Fireplace", "3 Bedrooms", "Hot Tub"],
+            safety: ["24/7 Security", "Smoke Detectors", "First Aid Kit"],
+            reviews: [
+                {name: "Sarah Johnson", date: "May 2023", rating: 5, text: "Absolutely stunning villa!"}
+            ]
+        },
+        {
+            id: 2,
+            name: "Lakefront Paradise",
+            place: "Lake Tahoe, California",
+            price: 75000,
+            image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
+            images: [
+                "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
+                "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80"
+            ],
+            features: ["Lake View", "Private Dock", "Boating", "4 Bedrooms"],
+            safety: ["Security Cameras", "Fire Alarm System", "First Aid Kit"],
+            reviews: [
+                {name: "Jennifer Lee", date: "June 2023", rating: 5, text: "Perfect lakefront location!"}
+            ]
+        }
+    ];
+}
+
+// Save villa to Google Sheets or localStorage
 async function saveVilla(villaData) {
     try {
-        if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== 'YOUR_GOOGLE_SCRIPT_URL_HERE') {
+        if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
             const response = await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -102,20 +121,27 @@ async function saveVilla(villaData) {
             });
             
             if (response.ok) {
-                return await response.json();
+                const result = await response.json();
+                // Update local array
+                updateLocalVilla(villaData);
+                return result;
             }
         }
         
-        // If Google Sheets not set up, use local storage
-        return saveVillaToLocal(villaData);
+        // If Google Sheets not set up, use localStorage
+        updateLocalVilla(villaData);
+        return { success: true, id: villaData.id };
+        
     } catch (error) {
         console.error('Error saving villa:', error);
-        return saveVillaToLocal(villaData);
+        // Fallback to localStorage
+        updateLocalVilla(villaData);
+        return { success: true, id: villaData.id };
     }
 }
 
-// Save villa to local storage (fallback)
-function saveVillaToLocal(villaData) {
+// Update villa in local array and localStorage
+function updateLocalVilla(villaData) {
     if (villaData.id) {
         // Update existing villa
         const index = villas.findIndex(v => v.id === villaData.id);
@@ -126,19 +152,18 @@ function saveVillaToLocal(villaData) {
         // Add new villa
         const newId = villas.length > 0 ? Math.max(...villas.map(v => v.id)) + 1 : 1;
         villaData.id = newId;
+        villaData.createdAt = new Date().toISOString();
         villas.push(villaData);
     }
     
     // Save to localStorage
     localStorage.setItem('villas', JSON.stringify(villas));
-    
-    return { success: true, id: villaData.id };
 }
 
 // Register user
 async function registerUser(userData) {
     try {
-        if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== 'YOUR_GOOGLE_SCRIPT_URL_HERE') {
+        if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
             const response = await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -153,8 +178,9 @@ async function registerUser(userData) {
             }
         }
         
-        // If Google Sheets not set up, use local storage
+        // If Google Sheets not set up, use localStorage
         return registerUserLocal(userData);
+        
     } catch (error) {
         console.error('Error registering user:', error);
         return registerUserLocal(userData);
@@ -163,8 +189,9 @@ async function registerUser(userData) {
 
 // Register user locally
 function registerUserLocal(userData) {
-    // Check if user already exists
     const users = JSON.parse(localStorage.getItem('users') || '[]');
+    
+    // Check if user already exists
     if (users.some(u => u.email === userData.email)) {
         throw new Error('User with this email already exists');
     }
@@ -173,7 +200,8 @@ function registerUserLocal(userData) {
         id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1,
         ...userData,
         isAdmin: false,
-        bookings: []
+        bookings: [],
+        createdAt: new Date().toISOString()
     };
     
     users.push(newUser);
@@ -194,7 +222,7 @@ function registerUserLocal(userData) {
 // Login user
 async function loginUser(email, password) {
     try {
-        if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== 'YOUR_GOOGLE_SCRIPT_URL_HERE') {
+        if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
             const response = await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -210,8 +238,9 @@ async function loginUser(email, password) {
             }
         }
         
-        // If Google Sheets not set up, use local storage
+        // If Google Sheets not set up, use localStorage
         return loginUserLocal(email, password);
+        
     } catch (error) {
         console.error('Error logging in:', error);
         return loginUserLocal(email, password);
@@ -259,7 +288,7 @@ function adminLogin(username, password) {
 // Create booking
 async function createBooking(bookingData) {
     try {
-        if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== 'YOUR_GOOGLE_SCRIPT_URL_HERE') {
+        if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
             const response = await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -274,8 +303,9 @@ async function createBooking(bookingData) {
             }
         }
         
-        // If Google Sheets not set up, use local storage
+        // If Google Sheets not set up, use localStorage
         return createBookingLocal(bookingData);
+        
     } catch (error) {
         console.error('Error creating booking:', error);
         return createBookingLocal(bookingData);
@@ -296,6 +326,17 @@ function createBookingLocal(bookingData) {
     
     bookings.push(newBooking);
     localStorage.setItem('bookings', JSON.stringify(bookings));
+    
+    // Add to user's bookings
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const userIndex = users.findIndex(u => u.id === bookingData.userId);
+    if (userIndex !== -1) {
+        if (!users[userIndex].bookings) {
+            users[userIndex].bookings = [];
+        }
+        users[userIndex].bookings.push(newId);
+        localStorage.setItem('users', JSON.stringify(users));
+    }
     
     return newBooking;
 }
@@ -335,12 +376,14 @@ function renderVillaCards() {
     });
     
     // Add event listeners to view details buttons
-    document.querySelectorAll('.view-details').forEach(button => {
-        button.addEventListener('click', function() {
-            const villaId = parseInt(this.getAttribute('data-id'));
-            showVillaDetails(villaId);
+    setTimeout(() => {
+        document.querySelectorAll('.view-details').forEach(button => {
+            button.addEventListener('click', function() {
+                const villaId = parseInt(this.getAttribute('data-id'));
+                showVillaDetails(villaId);
+            });
         });
-    });
+    }, 100);
 }
 
 // Show Villa Details
@@ -354,7 +397,12 @@ function showVillaDetails(villaId) {
     document.getElementById('detail-title').textContent = villa.name;
     document.getElementById('detail-location').textContent = villa.place;
     document.getElementById('detail-price').innerHTML = `₹${villa.price.toLocaleString('en-IN')} <span>/ night</span>`;
-    document.getElementById('main-image').src = villa.image;
+    
+    // Update main image
+    const mainImage = document.getElementById('main-image');
+    if (mainImage) {
+        mainImage.src = villa.image;
+    }
     
     // Update thumbnails
     const thumbnailContainer = document.getElementById('thumbnail-container');
@@ -391,7 +439,48 @@ function showVillaDetails(villaId) {
         });
     }
     
-    // Show detail page and hide main section
+    // Update safety features
+    const safetyContainer = document.getElementById('safety-container');
+    if (safetyContainer) {
+        safetyContainer.innerHTML = '';
+        (villa.safety || []).forEach(safetyItem => {
+            const safetyDiv = document.createElement('div');
+            safetyDiv.className = 'safety-item';
+            safetyDiv.innerHTML = `
+                <h4><i class="fas fa-shield-alt"></i> ${safetyItem}</h4>
+                <p>This property includes ${safetyItem.toLowerCase()} for your safety and peace of mind.</p>
+            `;
+            safetyContainer.appendChild(safetyDiv);
+        });
+    }
+    
+    // Update reviews
+    const reviewsContainer = document.getElementById('reviews-container');
+    if (reviewsContainer) {
+        reviewsContainer.innerHTML = '';
+        (villa.reviews || []).forEach(review => {
+            const reviewCard = document.createElement('div');
+            reviewCard.className = 'review-card';
+            reviewCard.innerHTML = `
+                <div class="review-header">
+                    <div class="reviewer">
+                        <img src="https://randomuser.me/api/portraits/${review.name.includes('Sarah') || review.name.includes('Jennifer') ? 'women' : 'men'}/${Math.floor(Math.random() * 50)}.jpg" alt="${review.name}" class="reviewer-img">
+                        <div class="reviewer-info">
+                            <h4>${review.name}</h4>
+                            <div class="review-date">${review.date}</div>
+                        </div>
+                    </div>
+                    <div class="rating">
+                        ${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}
+                    </div>
+                </div>
+                <p>${review.text}</p>
+            `;
+            reviewsContainer.appendChild(reviewCard);
+        });
+    }
+    
+    // Show detail page and hide other sections
     document.getElementById('villa-detail').style.display = 'block';
     document.getElementById('villas').style.display = 'none';
     document.getElementById('admin-dashboard').style.display = 'none';
@@ -432,6 +521,13 @@ function updateUserUI() {
         
         // Remove user from localStorage
         localStorage.removeItem('currentUser');
+        
+        // Add event listeners
+        setTimeout(() => {
+            document.getElementById('register-btn')?.addEventListener('click', showRegistrationModal);
+            document.getElementById('login-btn')?.addEventListener('click', showLoginModal);
+            document.getElementById('admin-login-btn')?.addEventListener('click', showAdminLoginModal);
+        }, 100);
     }
 }
 
@@ -514,7 +610,7 @@ function renderAdminVillasTable() {
     }, 100);
 }
 
-// Show Villa Modal
+// Show Villa Modal (Add/Edit)
 function showVillaModal(villaId = null) {
     const isEditing = villaId !== null;
     
@@ -562,7 +658,7 @@ async function deleteVilla(villaId) {
     }
 }
 
-// ========== EVENT LISTENERS ==========
+// ========== EVENT LISTENERS SETUP ==========
 
 function setupEventListeners() {
     // Mobile menu toggle
@@ -776,7 +872,7 @@ function setupEventListeners() {
         window.scrollTo({top: 0, behavior: 'smooth'});
     });
     
-    // View My Bookings button
+    // View My Bookings button in login modal
     document.getElementById('user-view-bookings-btn')?.addEventListener('click', function() {
         closeModal('login-modal');
         showUserBookings();
@@ -791,13 +887,6 @@ function setupEventListeners() {
     });
     
     document.getElementById('check-out')?.addEventListener('change', calculateBookingPrice);
-    
-    // Initial button event listeners
-    setTimeout(() => {
-        document.getElementById('register-btn')?.addEventListener('click', showRegistrationModal);
-        document.getElementById('login-btn')?.addEventListener('click', showLoginModal);
-        document.getElementById('admin-login-btn')?.addEventListener('click', showAdminLoginModal);
-    }, 100);
     
     // Close modals when clicking outside
     window.addEventListener('click', function(e) {
@@ -822,6 +911,13 @@ function setupEventListeners() {
             window.scrollTo({top: 0, behavior: 'smooth'});
         });
     }
+    
+    // Initial button event listeners
+    setTimeout(() => {
+        document.getElementById('register-btn')?.addEventListener('click', showRegistrationModal);
+        document.getElementById('login-btn')?.addEventListener('click', showLoginModal);
+        document.getElementById('admin-login-btn')?.addEventListener('click', showAdminLoginModal);
+    }, 100);
 }
 
 // ========== MODAL FUNCTIONS ==========
@@ -981,3 +1077,140 @@ function showUserBookings() {
         }
     });
 }
+
+// ========== ADDITIONAL ADMIN FUNCTIONS ==========
+
+// Show Admin Manage Bookings
+async function showAdminManageBookings() {
+    try {
+        const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
+        
+        if (bookings.length === 0) {
+            showNotification('No bookings in the system', 'warning');
+            return;
+        }
+        
+        let bookingsHTML = '<table><thead><tr><th>ID</th><th>User ID</th><th>Villa</th><th>Check-in</th><th>Check-out</th><th>Status</th></tr></thead><tbody>';
+        
+        bookings.forEach(booking => {
+            bookingsHTML += `
+                <tr>
+                    <td>${booking.id}</td>
+                    <td>${booking.userId}</td>
+                    <td>${booking.villaName}</td>
+                    <td>${booking.checkIn}</td>
+                    <td>${booking.checkOut}</td>
+                    <td><span class="booking-status ${booking.status}">${booking.status}</span></td>
+                </tr>
+            `;
+        });
+        
+        bookingsHTML += '</tbody></table>';
+        
+        // Create modal
+        const modalHTML = `
+            <div class="modal" id="admin-bookings-modal">
+                <div class="modal-content modal-large">
+                    <span class="close-modal" id="close-admin-bookings">&times;</span>
+                    <h2>Manage All Bookings</h2>
+                    <div class="admin-table">
+                        <h3>All Bookings (${bookings.length})</h3>
+                        ${bookingsHTML}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add modal to body
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Show modal
+        document.getElementById('admin-bookings-modal').style.display = 'flex';
+        
+        // Add close event
+        document.getElementById('close-admin-bookings').addEventListener('click', () => {
+            document.getElementById('admin-bookings-modal').remove();
+        });
+        
+        // Close when clicking outside
+        window.addEventListener('click', function(e) {
+            if (e.target.id === 'admin-bookings-modal') {
+                document.getElementById('admin-bookings-modal').remove();
+            }
+        });
+        
+    } catch (error) {
+        showNotification('Failed to load bookings', 'danger');
+    }
+}
+
+// Show Admin Manage Users
+async function showAdminManageUsers() {
+    try {
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        
+        if (users.length === 0) {
+            showNotification('No users in the system', 'warning');
+            return;
+        }
+        
+        let usersHTML = '<table><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Role</th></tr></thead><tbody>';
+        
+        users.forEach(user => {
+            usersHTML += `
+                <tr>
+                    <td>${user.id}</td>
+                    <td>${user.firstName} ${user.lastName}</td>
+                    <td>${user.email}</td>
+                    <td>${user.phone}</td>
+                    <td><span class="user-role ${user.isAdmin ? 'admin' : 'user'}">${user.isAdmin ? 'Admin' : 'User'}</span></td>
+                </tr>
+            `;
+        });
+        
+        usersHTML += '</tbody></table>';
+        
+        // Create modal
+        const modalHTML = `
+            <div class="modal" id="admin-users-modal">
+                <div class="modal-content modal-large">
+                    <span class="close-modal" id="close-admin-users">&times;</span>
+                    <h2>Manage Users</h2>
+                    <div class="admin-table">
+                        <h3>All Users (${users.length})</h3>
+                        ${usersHTML}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add modal to body
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Show modal
+        document.getElementById('admin-users-modal').style.display = 'flex';
+        
+        // Add close event
+        document.getElementById('close-admin-users').addEventListener('click', () => {
+            document.getElementById('admin-users-modal').remove();
+        });
+        
+        // Close when clicking outside
+        window.addEventListener('click', function(e) {
+            if (e.target.id === 'admin-users-modal') {
+                document.getElementById('admin-users-modal').remove();
+            }
+        });
+        
+    } catch (error) {
+        showNotification('Failed to load users', 'danger');
+    }
+}
+
+// Add event listeners for admin buttons
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        document.getElementById('admin-manage-bookings-btn')?.addEventListener('click', showAdminManageBookings);
+        document.getElementById('admin-manage-users-btn')?.addEventListener('click', showAdminManageUsers);
+    }, 1000);
+});
