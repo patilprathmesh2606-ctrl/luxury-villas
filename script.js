@@ -1,5 +1,5 @@
 // Configuration
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyQ9yfoRDaHcZPDgWRRYifX86SSNoCRLf5F4leXvnAAzuc8nzvJwOn65th0BV5I9EWRzg/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbygGvzRvgHUpuwFHC_x34pcWYaghYd_Gro_JXt2EjtgJVEJV_kZMrWgwIWhG3TzdyIx0Q/exec';
 
 // Global Variables
 let villas = [];
@@ -1193,4 +1193,5 @@ document.head.appendChild(style);
 
 // Initialize
 console.log('Luxury Villas - Application Initialized Successfully');
+
 
