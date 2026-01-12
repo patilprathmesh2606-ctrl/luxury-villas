@@ -177,8 +177,46 @@ function clearForm() {
     document.getElementById("villa-id").value = "";
     document.getElementById("villa-form").reset();
 }
+function updateAuthUI() {
+  const user = JSON.parse(localStorage.getItem("user"));
 
+  // Get buttons
+  const loginBtn = document.getElementById("loginBtn");
+  const registerBtn = document.getElementById("registerBtn");
+  const adminBtn = document.getElementById("adminBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
 
+  // Safety check
+  if (!loginBtn || !registerBtn) return;
+
+  if (!user) {
+    // Not logged in
+    loginBtn.style.display = "inline-block";
+    registerBtn.style.display = "inline-block";
+    if (adminBtn) adminBtn.style.display = "none";
+    if (logoutBtn) logoutBtn.style.display = "none";
+    return;
+  }
+
+  // Logged in
+  loginBtn.style.display = "none";
+  registerBtn.style.display = "none";
+  if (logoutBtn) logoutBtn.style.display = "inline-block";
+
+  if (user.role === "admin" && adminBtn) {
+    adminBtn.style.display = "inline-block";
+  } else if (adminBtn) {
+    adminBtn.style.display = "none";
+  }
+}
+function logout() {
+  localStorage.removeItem("user");
+  updateAuthUI();
+  alert("Logged out successfully");
+}
+document.addEventListener("DOMContentLoaded", () => {
+  updateAuthUI();
+});
 
 
 
