@@ -1,0 +1,7 @@
+luxury-villas/
+├── index.html          # Main HTML file
+├── styles.css          # CSS styles
+├── script.js           # Main JavaScript
+├── google-apps-script.js # Google Apps Script code
+├── GOOGLE_SHEETS_SETUP.md # Setup instructions
+└── .github/workflows/deploy.yml # GitHub Pages deployment
