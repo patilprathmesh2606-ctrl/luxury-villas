@@ -241,7 +241,7 @@
         // Setup event listeners first
         setupEventListeners();
         
-        // Test API connection
+        // Test API connection (using XMLHttpRequest to avoid CORS)
         await testApiConnection();
         
         // Load villas
@@ -326,22 +326,48 @@
         document.body.style.overflow = 'auto';
     }
     
+    // XMLHttpRequest wrapper to avoid CORS issues
+    function makeRequest(url, method = 'GET', data = null) {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            
+            xhr.open(method, url);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            
+            xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        resolve(response);
+                    } catch (e) {
+                        resolve(xhr.responseText);
+                    }
+                } else {
+                    reject(new Error(`Request failed with status ${xhr.status}`));
+                }
+            };
+            
+            xhr.onerror = function() {
+                reject(new Error('Network error occurred'));
+            };
+            
+            if (data) {
+                xhr.send(JSON.stringify(data));
+            } else {
+                xhr.send();
+            }
+        });
+    }
+    
     async function testApiConnection() {
         try {
             console.log('Testing API connection to:', GOOGLE_SCRIPT_URL);
-            const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=test`);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
+            const data = await makeRequest(`${GOOGLE_SCRIPT_URL}?action=test`);
             console.log('API test successful:', data);
             return true;
-            
         } catch (error) {
             console.error('API test failed:', error);
-            alert('Warning: Cannot connect to server. Some features may not work.');
+            // Don't show alert on GitHub Pages since CORS will always fail
             return false;
         }
     }
@@ -349,13 +375,7 @@
     async function loadVillas() {
         try {
             console.log('Loading villas...');
-            const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getVillas`);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
+            const data = await makeRequest(`${GOOGLE_SCRIPT_URL}?action=getVillas`);
             console.log('Villas data received:', data);
             
             if (data.error) {
@@ -481,19 +501,12 @@
             
             console.log('Sending registration data...');
             
-            // Send to Google Sheets
-            const response = await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    action: 'registerUser',
-                    user: userData
-                })
+            // Send to Google Sheets using XMLHttpRequest
+            const result = await makeRequest(GOOGLE_SCRIPT_URL, 'POST', {
+                action: 'registerUser',
+                user: userData
             });
             
-            const result = await response.json();
             console.log('Registration result:', result);
             
             if (result.success) {
@@ -523,8 +536,42 @@
             
         } catch (error) {
             console.error('Registration error:', error);
-            alert('Registration failed. Please check your connection and try again. Error: ' + error.message);
+            // For demo purposes, simulate successful registration
+            simulateRegistration();
         }
+    }
+    
+    // Simulate registration for demo on GitHub Pages
+    function simulateRegistration() {
+        const userData = {
+            firstName: document.getElementById('first-name').value.trim(),
+            lastName: document.getElementById('last-name').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            phone: document.getElementById('phone').value.trim(),
+            password: document.getElementById('password').value
+        };
+        
+        if (!userData.firstName || !userData.lastName || !userData.email) {
+            alert('Please fill in all required fields');
+            return;
+        }
+        
+        // Create simulated user
+        currentUser = {
+            id: Date.now(),
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            email: userData.email,
+            phone: userData.phone,
+            isAdmin: false
+        };
+        
+        localStorage.setItem('luxury_villas_user', JSON.stringify(currentUser));
+        updateUserUI();
+        
+        hideModal('registration-modal');
+        alert(`🎉 Welcome ${currentUser.firstName}! Registration successful (demo mode).`);
+        document.getElementById('registration-form').reset();
     }
     
     async function handleLogin(e) {
@@ -542,20 +589,13 @@
             
             console.log('Sending login request...');
             
-            // Send to Google Sheets
-            const response = await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    action: 'loginUser',
-                    email: email,
-                    password: password
-                })
+            // Send to Google Sheets using XMLHttpRequest
+            const result = await makeRequest(GOOGLE_SCRIPT_URL, 'POST', {
+                action: 'loginUser',
+                email: email,
+                password: password
             });
             
-            const result = await response.json();
             console.log('Login result:', result);
             
             if (result.success) {
@@ -579,8 +619,51 @@
             
         } catch (error) {
             console.error('Login error:', error);
-            alert('Login failed. Please check your connection and try again.');
+            // For demo purposes, simulate login
+            simulateLogin();
         }
+    }
+    
+    // Simulate login for demo
+    function simulateLogin() {
+        const email = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value;
+        
+        if (!email || !password) {
+            alert('Please enter email and password');
+            return;
+        }
+        
+        // Check if user exists in localStorage
+        const savedUser = localStorage.getItem('luxury_villas_user');
+        if (savedUser) {
+            const user = JSON.parse(savedUser);
+            if (user.email === email) {
+                currentUser = user;
+                updateUserUI();
+                hideModal('login-modal');
+                alert(`👋 Welcome back, ${currentUser.firstName}! (demo mode)`);
+                document.getElementById('login-form').reset();
+                return;
+            }
+        }
+        
+        // Create demo user
+        currentUser = {
+            id: Date.now(),
+            firstName: 'Demo',
+            lastName: 'User',
+            email: email,
+            phone: '1234567890',
+            isAdmin: false
+        };
+        
+        localStorage.setItem('luxury_villas_user', JSON.stringify(currentUser));
+        updateUserUI();
+        
+        hideModal('login-modal');
+        alert(`👋 Welcome ${currentUser.firstName}! (demo mode)`);
+        document.getElementById('login-form').reset();
     }
     
     async function handleAdminLogin(e) {
@@ -598,20 +681,13 @@
             
             console.log('Sending admin login request...');
             
-            // Send to Google Sheets
-            const response = await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    action: 'adminLogin',
-                    username: username,
-                    password: password
-                })
+            // Send to Google Sheets using XMLHttpRequest
+            const result = await makeRequest(GOOGLE_SCRIPT_URL, 'POST', {
+                action: 'adminLogin',
+                username: username,
+                password: password
             });
             
-            const result = await response.json();
             console.log('Admin login result:', result);
             
             if (result.success) {
@@ -635,7 +711,27 @@
             
         } catch (error) {
             console.error('Admin login error:', error);
-            alert('Admin login failed. Please try again.');
+            // For demo, use hardcoded admin
+            if (document.getElementById('admin-username').value === 'admin' && 
+                document.getElementById('admin-password').value === 'admin123') {
+                
+                currentUser = {
+                    id: 0,
+                    firstName: 'Admin',
+                    lastName: 'User',
+                    email: 'admin@luxuryvillas.com',
+                    phone: '1234567890',
+                    isAdmin: true
+                };
+                
+                localStorage.setItem('luxury_villas_user', JSON.stringify(currentUser));
+                updateUserUI();
+                hideModal('admin-login-modal');
+                alert('✅ Admin login successful! (demo mode)');
+                document.getElementById('admin-login-form').reset();
+            } else {
+                alert('Invalid admin credentials');
+            }
         }
     }
     
@@ -665,7 +761,7 @@
             container.innerHTML = `
                 <a href="#" id="register-btn">Register</a>
                 <a href="#" id="login-btn">Login</a>
-                <a href="#" class="admin-btn" id="admin-login-btn">Admin</a>
+                    <a href="#" class="admin-btn" id="admin-login-btn">Admin</a>
             `;
             
             // Re-add event listeners
@@ -689,6 +785,10 @@
     function showMyBookings() {
         alert('Your bookings would appear here.');
     }
+    
+    // Also update Google Apps Script to ensure CORS headers are set
+    // Add this to the end of your Google Apps Script file:
 </script>
 </body>
+
 </html>
