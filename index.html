@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luxury Villa Rentals | Daily Vacation Homes</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+    <style>
+        /* Your complete CSS from earlier - paste it here */
+        /* Make sure all the CSS is included */
+        
+        /* Add these styles if missing */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+        
+        .btn {
+            background: #1a5f7a;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .btn:hover {
+            background: #15526b;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header id="header">
+        <div class="container">
+            <nav class="navbar">
+                <a href="#" class="logo">Luxury<span>Villas</span></a>
+                <div class="menu-toggle" id="mobile-menu">
+                    <i class="fas fa-bars"></i>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#villas">Villas</a></li>
+                    <li><a href="#why-choose-us">Why Choose Us</a></li>
+                    <li><a href="#safety">Safety</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+                <div class="user-actions" id="user-actions-container">
+                    <a href="#" id="register-btn">Register</a>
+                    <a href="#" id="login-btn">Login</a>
+                    <a href="#" class="admin-btn" id="admin-login-btn">Admin</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+    
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="hero-content">
+            <h1>Experience Luxury Villa Vacations</h1>
+            <p>Discover exquisite villas for daily rentals in the most beautiful locations.</p>
+            <a href="#villas" class="btn">Explore Villas</a>
+        </div>
+    </section>
+
+    <!-- Villas Section -->
+    <section class="villas-section" id="villas">
+        <div class="container">
+            <div class="section-title">
+                <h2>Featured Villas</h2>
+                <p>Select from our premium collection of luxury villas</p>
+            </div>
+            <div class="villas-grid" id="villas-container">
+                <div class="loading">Loading villas...</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <h3>Luxury Villas</h3>
+                    <p>Providing exceptional villa rental experiences.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Registration Modal -->
+    <div class="modal" id="registration-modal">
+        <div class="modal-content">
+            <span class="close-modal" id="close-registration">&times;</span>
+            <h2>Register for Villa Rentals</h2>
+            <form id="registration-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="first-name">First Name *</label>
+                        <input type="text" id="first-name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="last-name">Last Name *</label>
+                        <input type="text" id="last-name" class="form-control" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email Address *</label>
+                    <input type="email" id="email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password *</label>
+                    <input type="password" id="password" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirm-password">Confirm Password *</label>
+                    <input type="password" id="confirm-password" class="form-control" required>
+                </div>
+                <button type="submit" class="btn" style="width: 100%;">Register</button>
+            </form>
+            <div class="form-footer">
+                <p>Already have an account? <a href="#" id="show-login-from-reg">Login here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal" id="login-modal">
+        <div class="modal-content">
+            <span class="close-modal" id="close-login">&times;</span>
+            <h2>Login to Your Account</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Email Address *</label>
+                    <input type="email" id="login-email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password *</label>
+                    <input type="password" id="login-password" class="form-control" required>
+                </div>
+                <button type="submit" class="btn" style="width: 100%;">Login</button>
+            </form>
+            <div class="form-footer">
+                <p>Don't have an account? <a href="#" id="show-register-from-login">Register here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Login Modal -->
+    <div class="modal" id="admin-login-modal">
+        <div class="modal-content">
+            <span class="close-modal" id="close-admin-login">&times;</span>
+            <h2>Admin Login</h2>
+            <form id="admin-login-form">
+                <div class="form-group">
+                    <label for="admin-username">Username *</label>
+                    <input type="text" id="admin-username" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="admin-password">Password *</label>
+                    <input type="password" id="admin-password" class="form-control" required>
+                </div>
+                <button type="submit" class="btn" style="width: 100%;">Login as Admin</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+    // Configuration - REPLACE THIS WITH YOUR ACTUAL URL
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+    
+    // Global Variables
+    let villas = [];
+    let currentUser = null;
+    
+    // Initialize when DOM loads
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Initializing Luxury Villas...');
+        initApp();
+    });
+    
+    async function initApp() {
+        // Setup event listeners first
+        setupEventListeners();
+        
+        // Test API connection
+        await testApiConnection();
+        
+        // Load villas
+        await loadVillas();
+        
+        // Check for saved session
+        const savedUser = localStorage.getItem('luxury_villas_user');
+        if (savedUser) {
+            try {
+                currentUser = JSON.parse(savedUser);
+                updateUserUI();
+                console.log('User restored:', currentUser);
+            } catch (e) {
+                console.error('Error parsing saved user:', e);
+            }
+        }
+    }
+    
+    function setupEventListeners() {
+        // Modal toggles
+        document.getElementById('register-btn').addEventListener('click', function(e) {
+            e.preventDefault();
+            showModal('registration-modal');
+        });
+        
+        document.getElementById('login-btn').addEventListener('click', function(e) {
+            e.preventDefault();
+            showModal('login-modal');
+        });
+        
+        document.getElementById('admin-login-btn').addEventListener('click', function(e) {
+            e.preventDefault();
+            showModal('admin-login-modal');
+        });
+        
+        // Modal close buttons
+        document.getElementById('close-registration').addEventListener('click', function() {
+            hideModal('registration-modal');
+        });
+        
+        document.getElementById('close-login').addEventListener('click', function() {
+            hideModal('login-modal');
+        });
+        
+        document.getElementById('close-admin-login').addEventListener('click', function() {
+            hideModal('admin-login-modal');
+        });
+        
+        // Modal links
+        document.getElementById('show-login-from-reg').addEventListener('click', function(e) {
+            e.preventDefault();
+            hideModal('registration-modal');
+            showModal('login-modal');
+        });
+        
+        document.getElementById('show-register-from-login').addEventListener('click', function(e) {
+            e.preventDefault();
+            hideModal('login-modal');
+            showModal('registration-modal');
+        });
+        
+        // Form submissions
+        document.getElementById('registration-form').addEventListener('submit', handleRegistration);
+        document.getElementById('login-form').addEventListener('submit', handleLogin);
+        document.getElementById('admin-login-form').addEventListener('submit', handleAdminLogin);
+        
+        // Close modal when clicking outside
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal')) {
+                hideModal(e.target.id);
+            }
+        });
+    }
+    
+    function showModal(modalId) {
+        document.getElementById(modalId).classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function hideModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+    
+    async function testApiConnection() {
+        try {
+            console.log('Testing API connection to:', GOOGLE_SCRIPT_URL);
+            const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=test`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('API test successful:', data);
+            return true;
+            
+        } catch (error) {
+            console.error('API test failed:', error);
+            alert('Warning: Cannot connect to server. Some features may not work.');
+            return false;
+        }
+    }
+    
+    async function loadVillas() {
+        try {
+            console.log('Loading villas...');
+            const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getVillas`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('Villas data received:', data);
+            
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            villas = data.villas || [];
+            console.log(`Loaded ${villas.length} villas`);
+            renderVillas();
+            
+        } catch (error) {
+            console.error('Error loading villas from API:', error);
+            // Use fallback data
+            villas = getFallbackVillas();
+            renderVillas();
+            console.log('Using fallback villa data');
+        }
+    }
+    
+    function getFallbackVillas() {
+        return [
+            {
+                id: 1,
+                name: "Mountain View Retreat",
+                place: "Aspen, Colorado",
+                price: 65000,
+                image: "https://images.unsplash.com/photo-1518780664697-55e3ad937233",
+                features: ["Swimming Pool", "Mountain View", "Fireplace", "3 Bedrooms"],
+                description: "Beautiful mountain villa with stunning views"
+            },
+            {
+                id: 2,
+                name: "Lakefront Paradise",
+                place: "Lake Tahoe, California",
+                price: 75000,
+                image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750",
+                features: ["Lake View", "Private Dock", "Boating", "4 Bedrooms"],
+                description: "Stunning lakefront property with private access"
+            },
+            {
+                id: 3,
+                name: "Beachfront Villa",
+                place: "Maldives",
+                price: 120000,
+                image: "https://images.unsplash.com/photo-1519046904884-53103b34b206",
+                features: ["Private Beach", "Infinity Pool", "5 Bedrooms", "Spa"],
+                description: "Luxurious beachfront villa with all amenities"
+            }
+        ];
+    }
+    
+    function renderVillas() {
+        const container = document.getElementById('villas-container');
+        if (!container) {
+            console.error('Villas container not found');
+            return;
+        }
+        
+        if (villas.length === 0) {
+            container.innerHTML = '<p class="no-villas">No villas available at the moment.</p>';
+            return;
+        }
+        
+        let html = '';
+        villas.forEach(villa => {
+            html += `
+                <div class="villa-card">
+                    <img src="${villa.image}" alt="${villa.name}" class="villa-img" 
+                         onerror="this.src='https://images.unsplash.com/photo-1518780664697-55e3ad937233'">
+                    <div class="villa-info">
+                        <h3 class="villa-name">${villa.name}</h3>
+                        <p class="villa-place">${villa.place}</p>
+                        <div class="villa-features">
+                            ${(villa.features || []).slice(0, 3).map(feature => `<span>${feature}</span>`).join('')}
+                            ${(villa.features || []).length > 3 ? '<span>+ more</span>' : ''}
+                        </div>
+                        <div class="villa-price">
+                            <div class="price">₹${villa.price.toLocaleString('en-IN')} <span>/ night</span></div>
+                            <button class="btn">View Details</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+    
+    async function handleRegistration(e) {
+        e.preventDefault();
+        console.log('Registration submitted');
+        
+        try {
+            // Get form data
+            const userData = {
+                firstName: document.getElementById('first-name').value.trim(),
+                lastName: document.getElementById('last-name').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                password: document.getElementById('password').value,
+                address: '',
+                idProof: '',
+                isAdmin: false
+            };
+            
+            // Validation
+            if (!userData.firstName || !userData.lastName || !userData.email || !userData.password) {
+                alert('Please fill in all required fields (marked with *)');
+                return;
+            }
+            
+            if (document.getElementById('password').value !== document.getElementById('confirm-password').value) {
+                alert('Passwords do not match');
+                return;
+            }
+            
+            // Email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(userData.email)) {
+                alert('Please enter a valid email address');
+                return;
+            }
+            
+            console.log('Sending registration data...');
+            
+            // Send to Google Sheets
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'registerUser',
+                    user: userData
+                })
+            });
+            
+            const result = await response.json();
+            console.log('Registration result:', result);
+            
+            if (result.success) {
+                // Set current user
+                currentUser = result.user;
+                localStorage.setItem('luxury_villas_user', JSON.stringify(currentUser));
+                
+                // Update UI
+                updateUserUI();
+                
+                // Close modal and show success
+                hideModal('registration-modal');
+                alert(`🎉 Welcome ${currentUser.firstName}! Registration successful. You can now login.`);
+                
+                // Clear form
+                document.getElementById('registration-form').reset();
+                
+                // Auto show login
+                setTimeout(() => {
+                    showModal('login-modal');
+                    document.getElementById('login-email').value = userData.email;
+                }, 500);
+                
+            } else {
+                alert(result.error || 'Registration failed. Please try again.');
+            }
+            
+        } catch (error) {
+            console.error('Registration error:', error);
+            alert('Registration failed. Please check your connection and try again. Error: ' + error.message);
+        }
+    }
+    
+    async function handleLogin(e) {
+        e.preventDefault();
+        console.log('Login submitted');
+        
+        try {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            
+            if (!email || !password) {
+                alert('Please enter email and password');
+                return;
+            }
+            
+            console.log('Sending login request...');
+            
+            // Send to Google Sheets
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'loginUser',
+                    email: email,
+                    password: password
+                })
+            });
+            
+            const result = await response.json();
+            console.log('Login result:', result);
+            
+            if (result.success) {
+                // Set current user
+                currentUser = result.user;
+                localStorage.setItem('luxury_villas_user', JSON.stringify(currentUser));
+                
+                // Update UI
+                updateUserUI();
+                
+                // Close modal and show success
+                hideModal('login-modal');
+                alert(`👋 Welcome back, ${currentUser.firstName}!`);
+                
+                // Clear form
+                document.getElementById('login-form').reset();
+                
+            } else {
+                alert(result.error || 'Invalid email or password');
+            }
+            
+        } catch (error) {
+            console.error('Login error:', error);
+            alert('Login failed. Please check your connection and try again.');
+        }
+    }
+    
+    async function handleAdminLogin(e) {
+        e.preventDefault();
+        console.log('Admin login submitted');
+        
+        try {
+            const username = document.getElementById('admin-username').value.trim();
+            const password = document.getElementById('admin-password').value;
+            
+            if (!username || !password) {
+                alert('Please enter username and password');
+                return;
+            }
+            
+            console.log('Sending admin login request...');
+            
+            // Send to Google Sheets
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'adminLogin',
+                    username: username,
+                    password: password
+                })
+            });
+            
+            const result = await response.json();
+            console.log('Admin login result:', result);
+            
+            if (result.success) {
+                // Set current user
+                currentUser = result.user;
+                localStorage.setItem('luxury_villas_user', JSON.stringify(currentUser));
+                
+                // Update UI
+                updateUserUI();
+                
+                // Close modal and show success
+                hideModal('admin-login-modal');
+                alert('✅ Admin login successful!');
+                
+                // Clear form
+                document.getElementById('admin-login-form').reset();
+                
+            } else {
+                alert(result.error || 'Invalid admin credentials');
+            }
+            
+        } catch (error) {
+            console.error('Admin login error:', error);
+            alert('Admin login failed. Please try again.');
+        }
+    }
+    
+    function updateUserUI() {
+        const container = document.getElementById('user-actions-container');
+        if (!container) {
+            console.error('User actions container not found');
+            return;
+        }
+        
+        if (currentUser) {
+            container.innerHTML = `
+                <span style="color: #1a5f7a; font-weight: 600;">Welcome, ${currentUser.firstName}</span>
+                ${!currentUser.isAdmin ? '<a href="#" id="my-bookings-btn">My Bookings</a>' : ''}
+                <a href="#" id="logout-btn">Logout</a>
+                ${currentUser.isAdmin ? '<a href="#" class="admin-btn" id="admin-dashboard-btn">Dashboard</a>' : ''}
+            `;
+            
+            // Add event listeners to new buttons
+            setTimeout(() => {
+                document.getElementById('logout-btn')?.addEventListener('click', logoutUser);
+                document.getElementById('admin-dashboard-btn')?.addEventListener('click', showAdminDashboard);
+                document.getElementById('my-bookings-btn')?.addEventListener('click', showMyBookings);
+            }, 100);
+            
+        } else {
+            container.innerHTML = `
+                <a href="#" id="register-btn">Register</a>
+                <a href="#" id="login-btn">Login</a>
+                <a href="#" class="admin-btn" id="admin-login-btn">Admin</a>
+            `;
+            
+            // Re-add event listeners
+            setTimeout(() => {
+                setupEventListeners();
+            }, 100);
+        }
+    }
+    
+    function logoutUser() {
+        currentUser = null;
+        localStorage.removeItem('luxury_villas_user');
+        updateUserUI();
+        alert('Logged out successfully');
+    }
+    
+    function showAdminDashboard() {
+        alert('Admin dashboard would open here. User is admin: ' + currentUser.isAdmin);
+    }
+    
+    function showMyBookings() {
+        alert('Your bookings would appear here.');
+    }
+</script>
+</body>
+</html>
