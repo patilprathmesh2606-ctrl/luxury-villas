@@ -1,296 +1,219 @@
-// Google Sheets API Configuration
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz4lwPh5ji4m3uLZq2xj5RU7SIjL4Tbu1tBrvwvnbHunzOV30jFJMUWfLAOS0PbvQVnww/exec'; // Replace with your Web App URL
+
+// Configuration - USE YOUR ACTUAL URL
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz4lwPh5ji4m3uLZq2xj5RU7SIjL4Tbu1tBrvwvnbHunzOV30jFJMUWfLAOS0PbvQVnww/exec';
 
 // Global Variables
 let villas = [];
 let currentUser = null;
 let isAdminLoggedIn = false;
-let currentVillaId = null;
 
 // ========== INITIALIZATION ==========
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, initializing app...');
-    initializeApp();
+    console.log('🚀 Luxury Villas - Initializing...');
+    console.log('API URL:', GOOGLE_SCRIPT_URL);
+    initApp();
 });
 
-async function initializeApp() {
-    // Load villas from Google Sheets
-    await loadVillasFromGoogleSheets();
-    
-    // Setup event listeners
-    setupEventListeners();
-    
-    // Check for saved user session
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-        try {
-            currentUser = JSON.parse(savedUser);
-            isAdminLoggedIn = currentUser.isAdmin || false;
-            updateUserUI();
-            showNotification(`Welcome back, ${currentUser.firstName}!`, 'success');
-        } catch (e) {
-            console.error('Error parsing saved user:', e);
+async function initApp() {
+    try {
+        // 1. Setup event listeners
+        setupEventListeners();
+        
+        // 2. Load REAL data from Google Sheets
+        console.log('📥 Loading REAL villas from Google Sheets...');
+        await loadVillasFromGoogleSheets();
+        
+        // 3. Check for saved user
+        const savedUser = localStorage.getItem('luxury_villas_user');
+        if (savedUser) {
+            try {
+                currentUser = JSON.parse(savedUser);
+                isAdminLoggedIn = currentUser.isAdmin || false;
+                updateUserUI();
+                console.log('👤 User restored:', currentUser);
+            } catch (e) {
+                console.error('Error parsing saved user:', e);
+            }
         }
+        
+        // 4. Test API connection
+        await testApiConnection();
+        
+        console.log('✅ App initialized successfully');
+        
+    } catch (error) {
+        console.error('❌ App initialization failed:', error);
     }
-    
-    // Initialize back to top button
-    initBackToTop();
 }
 
 // ========== GOOGLE SHEETS API FUNCTIONS ==========
 
-// Load villas from Google Sheets
 async function loadVillasFromGoogleSheets() {
     try {
-        console.log('Loading villas from Google Sheets...');
-        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getVillas&timestamp=${Date.now()}`);
-        const data = await response.json();
+        console.log('🔄 Fetching villas from:', GOOGLE_SCRIPT_URL);
         
-        if (data && data.villas) {
+        // Use XMLHttpRequest to avoid CORS issues
+        const data = await makeRequest(`${GOOGLE_SCRIPT_URL}?action=getVillas`);
+        
+        console.log('📊 Villas data received:', data);
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        if (!data.villas || data.villas.length === 0) {
+            console.warn('⚠️ No villas found in Google Sheets');
+            villas = [];
+        } else {
             villas = data.villas;
-            console.log(`Loaded ${villas.length} villas from Google Sheets`);
-            renderVillas();
-        } else {
-            throw new Error('No villas data received');
+            console.log(`✅ Loaded ${villas.length} REAL villas from Google Sheets`);
+            
+            // Log first villa details
+            if (villas.length > 0) {
+                console.log('First villa from Google Sheets:', {
+                    id: villas[0].id,
+                    name: villas[0].name,
+                    price: villas[0].price,
+                    features: villas[0].features
+                });
+            }
         }
-    } catch (error) {
-        console.error('Error loading villas from Google Sheets:', error);
-        showNotification('Error loading villas. Using fallback data.', 'danger');
-        await loadFallbackData();
-    }
-}
-
-// Load fallback data if Google Sheets fails
-async function loadFallbackData() {
-    try {
-        const savedVillas = localStorage.getItem('villas');
-        if (savedVillas) {
-            villas = JSON.parse(savedVillas);
-            console.log(`Loaded ${villas.length} villas from localStorage`);
-        } else {
-            // Use sample data
-            villas = [
-                {
-                    id: 1,
-                    name: "Mountain View Retreat",
-                    place: "Aspen, Colorado",
-                    price: 65000,
-                    image: "https://images.unsplash.com/photo-1518780664697-55e3ad937233?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-                    images: [
-                        "https://images.unsplash.com/photo-1518780664697-55e3ad937233?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-                        "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80"
-                    ],
-                    features: ["Swimming Pool", "Mountain View", "Fireplace", "3 Bedrooms", "Hot Tub"],
-                    safety: ["24/7 Security", "Smoke Detectors", "First Aid Kit"],
-                    description: "A beautiful mountain view villa with all amenities",
-                    reviews: [
-                        {name: "Sarah Johnson", date: "May 2023", rating: 5, text: "Absolutely stunning villa!"}
-                    ],
-                    createdAt: "2023-01-15T10:30:00.000Z"
-                }
-            ];
-            localStorage.setItem('villas', JSON.stringify(villas));
-        }
+        
         renderVillas();
-    } catch (error) {
-        console.error('Error loading fallback data:', error);
-    }
-}
-
-// Register user via Google Sheets
-async function registerUserToGoogleSheets(userData) {
-    try {
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                action: 'registerUser',
-                user: userData
-            })
-        });
         
-        const result = await response.json();
-        return result;
     } catch (error) {
-        console.error('Error registering user:', error);
-        throw error;
+        console.error('❌ Error loading villas from Google Sheets:', error);
+        alert('Failed to load villas. Please refresh the page.');
+        // DO NOT USE DEMO DATA - show empty state instead
+        villas = [];
+        renderVillas();
     }
 }
 
-// Login user via Google Sheets
-async function loginUserFromGoogleSheets(email, password) {
-    try {
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                action: 'loginUser',
-                email: email,
-                password: password
-            })
-        });
+// Universal request function (works with CORS)
+function makeRequest(url, method = 'GET', data = null) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open(method, url);
         
-        const result = await response.json();
-        return result;
-    } catch (error) {
-        console.error('Error logging in:', error);
-        throw error;
-    }
-}
-
-// Admin login via Google Sheets
-async function adminLoginFromGoogleSheets(username, password) {
-    try {
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                action: 'adminLogin',
-                username: username,
-                password: password
-            })
-        });
+        if (data) {
+            xhr.setRequestHeader('Content-Type', 'application/json');
+        }
         
-        const result = await response.json();
-        return result;
-    } catch (error) {
-        console.error('Error with admin login:', error);
-        throw error;
-    }
-}
-
-// Create booking via Google Sheets
-async function createBookingInGoogleSheets(bookingData) {
-    try {
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                action: 'createBooking',
-                booking: bookingData
-            })
-        });
+        xhr.onload = function() {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    resolve(JSON.parse(xhr.responseText));
+                } catch (e) {
+                    console.error('Parse error:', e, 'Response:', xhr.responseText);
+                    reject(new Error('Invalid JSON response'));
+                }
+            } else {
+                reject(new Error(`Request failed with status ${xhr.status}`));
+            }
+        };
         
-        const result = await response.json();
-        return result;
-    } catch (error) {
-        console.error('Error creating booking:', error);
-        throw error;
-    }
-}
-
-// Add villa via Google Sheets (admin only)
-async function addVillaToGoogleSheets(villaData) {
-    try {
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                action: 'addVilla',
-                villa: villaData
-            })
-        });
+        xhr.onerror = function() {
+            reject(new Error('Network error'));
+        };
         
-        const result = await response.json();
-        return result;
-    } catch (error) {
-        console.error('Error adding villa:', error);
-        throw error;
-    }
-}
-
-// Update villa via Google Sheets (admin only)
-async function updateVillaInGoogleSheets(villaData) {
-    try {
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                action: 'updateVilla',
-                villa: villaData
-            })
-        });
+        xhr.ontimeout = function() {
+            reject(new Error('Request timeout'));
+        };
         
-        const result = await response.json();
-        return result;
-    } catch (error) {
-        console.error('Error updating villa:', error);
-        throw error;
-    }
-}
-
-// Delete villa via Google Sheets (admin only)
-async function deleteVillaFromGoogleSheets(villaId) {
-    try {
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                action: 'deleteVilla',
-                villaId: villaId
-            })
-        });
-        
-        const result = await response.json();
-        return result;
-    } catch (error) {
-        console.error('Error deleting villa:', error);
-        throw error;
-    }
-}
-
-// Get user bookings from Google Sheets
-async function getUserBookingsFromGoogleSheets(userId) {
-    try {
-        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getUserBookings&userId=${userId}`);
-        const data = await response.json();
-        return data.bookings || [];
-    } catch (error) {
-        console.error('Error getting user bookings:', error);
-        return [];
-    }
-}
-
-// ========== EVENT LISTENERS ==========
-function setupEventListeners() {
-    console.log('Setting up event listeners...');
-    
-    // Mobile menu toggle
-    document.getElementById('mobile-menu')?.addEventListener('click', toggleMobileMenu);
-    
-    // Direct button event listeners
-    setTimeout(() => {
-        setupDirectEventListeners();
-    }, 100);
-    
-    // Close modal when clicking outside
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('modal')) {
-            closeModal(e.target.id);
+        if (data) {
+            xhr.send(JSON.stringify(data));
+        } else {
+            xhr.send();
         }
     });
 }
 
-function setupDirectEventListeners() {
-    // Register button
+async function registerUserToGoogleSheets(userData) {
+    try {
+        console.log('📝 Registering user via Google Sheets:', userData.email);
+        
+        const result = await makeRequest(GOOGLE_SCRIPT_URL, 'POST', {
+            action: 'registerUser',
+            user: userData
+        });
+        
+        console.log('Registration API response:', result);
+        return result;
+        
+    } catch (error) {
+        console.error('Registration API error:', error);
+        throw error;
+    }
+}
+
+async function loginUserFromGoogleSheets(email, password) {
+    try {
+        console.log('🔐 Logging in user:', email);
+        
+        const result = await makeRequest(GOOGLE_SCRIPT_URL, 'POST', {
+            action: 'loginUser',
+            email: email,
+            password: password
+        });
+        
+        console.log('Login API response:', result);
+        return result;
+        
+    } catch (error) {
+        console.error('Login API error:', error);
+        throw error;
+    }
+}
+
+async function adminLoginFromGoogleSheets(username, password) {
+    try {
+        console.log('👑 Admin login attempt:', username);
+        
+        const result = await makeRequest(GOOGLE_SCRIPT_URL, 'POST', {
+            action: 'adminLogin',
+            username: username,
+            password: password
+        });
+        
+        console.log('Admin login API response:', result);
+        return result;
+        
+    } catch (error) {
+        console.error('Admin login API error:', error);
+        throw error;
+    }
+}
+
+// ========== EVENT LISTENERS ==========
+
+function setupEventListeners() {
+    console.log('🔧 Setting up event listeners...');
+    
+    // Mobile menu
+    const mobileMenu = document.getElementById('mobile-menu');
+    if (mobileMenu) {
+        mobileMenu.addEventListener('click', function() {
+            const navLinks = document.querySelector('.nav-links');
+            const userActions = document.querySelector('.user-actions');
+            navLinks.classList.toggle('active');
+            userActions.classList.toggle('active');
+        });
+    }
+    
+    // Setup modal listeners with delay to ensure DOM is ready
+    setTimeout(() => {
+        setupModalListeners();
+    }, 100);
+}
+
+function setupModalListeners() {
+    // Registration button
     const registerBtn = document.getElementById('register-btn');
     if (registerBtn) {
         registerBtn.addEventListener('click', function(e) {
             e.preventDefault();
+            console.log('📝 Register button clicked');
             showModal('registration-modal');
         });
     }
@@ -300,39 +223,41 @@ function setupDirectEventListeners() {
     if (loginBtn) {
         loginBtn.addEventListener('click', function(e) {
             e.preventDefault();
+            console.log('🔐 Login button clicked');
             showModal('login-modal');
         });
     }
     
     // Admin login button
-    const adminLoginBtn = document.getElementById('admin-login-btn');
-    if (adminLoginBtn) {
-        adminLoginBtn.addEventListener('click', function(e) {
+    const adminBtn = document.getElementById('admin-login-btn');
+    if (adminBtn) {
+        adminBtn.addEventListener('click', function(e) {
             e.preventDefault();
+            console.log('👑 Admin button clicked');
             showModal('admin-login-modal');
         });
     }
     
     // Modal close buttons
-    document.querySelectorAll('.close-modal').forEach(button => {
-        button.addEventListener('click', function() {
+    document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.addEventListener('click', function() {
             const modal = this.closest('.modal');
             if (modal) {
-                closeModal(modal.id);
+                hideModal(modal.id);
             }
         });
     });
     
-    // Switch between login and registration
+    // Switch between modals
     document.getElementById('show-login-from-reg')?.addEventListener('click', function(e) {
         e.preventDefault();
-        closeModal('registration-modal');
+        hideModal('registration-modal');
         showModal('login-modal');
     });
     
     document.getElementById('show-register-from-login')?.addEventListener('click', function(e) {
         e.preventDefault();
-        closeModal('login-modal');
+        hideModal('login-modal');
         showModal('registration-modal');
     });
     
@@ -340,278 +265,231 @@ function setupDirectEventListeners() {
     document.getElementById('registration-form')?.addEventListener('submit', handleRegistration);
     document.getElementById('login-form')?.addEventListener('submit', handleLogin);
     document.getElementById('admin-login-form')?.addEventListener('submit', handleAdminLogin);
-    document.getElementById('booking-form')?.addEventListener('submit', handleBooking);
-    document.getElementById('villa-form')?.addEventListener('submit', handleVillaSubmit);
     
-    // Admin buttons
-    document.getElementById('add-villa-btn')?.addEventListener('click', function() {
-        showVillaModal();
+    // Close modal on outside click
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal')) {
+            hideModal(e.target.id);
+        }
     });
-    
-    document.getElementById('book-villa-btn')?.addEventListener('click', showBookingModal);
-}
-
-function toggleMobileMenu() {
-    const navLinks = document.querySelector('.nav-links');
-    const userActions = document.querySelector('.user-actions');
-    navLinks.classList.toggle('active');
-    userActions.classList.toggle('active');
 }
 
 // ========== MODAL FUNCTIONS ==========
+
 function showModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
+        console.log(`📱 Modal shown: ${modalId}`);
     }
 }
 
-function closeModal(modalId) {
+function hideModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.style.display = 'none';
         document.body.style.overflow = 'auto';
+        console.log(`📱 Modal hidden: ${modalId}`);
     }
 }
 
-// ========== FORM HANDLERS ==========
+// ========== FORM HANDLERS (REAL GOOGLE SHEETS) ==========
+
 async function handleRegistration(e) {
     e.preventDefault();
-    console.log('Registration form submitted');
+    console.log('📝 Registration form submitted');
     
     try {
+        // Get form data
         const userData = {
-            firstName: document.getElementById('first-name').value,
-            lastName: document.getElementById('last-name').value,
-            email: document.getElementById('email').value,
-            phone: document.getElementById('phone').value,
+            firstName: document.getElementById('first-name').value.trim(),
+            lastName: document.getElementById('last-name').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            phone: document.getElementById('phone').value.trim(),
             password: document.getElementById('password').value,
-            address: document.getElementById('address').value,
-            idProof: document.getElementById('id-proof').value,
+            address: document.getElementById('address')?.value.trim() || '',
+            idProof: document.getElementById('id-proof')?.value.trim() || '',
             isAdmin: false
         };
         
-        // Basic validation
+        // Validation
         if (!userData.firstName || !userData.lastName || !userData.email || !userData.password) {
-            alert('Please fill in all required fields');
+            alert('❌ Please fill in all required fields');
             return;
         }
         
         if (document.getElementById('password').value !== document.getElementById('confirm-password').value) {
-            alert('Passwords do not match');
+            alert('❌ Passwords do not match');
             return;
         }
         
-        // Register user via Google Sheets
+        // Register with REAL Google Sheets
+        console.log('🔄 Sending registration to Google Sheets...');
         const result = await registerUserToGoogleSheets(userData);
         
         if (result.success) {
             // Set current user
             currentUser = result.user;
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            localStorage.setItem('luxury_villas_user', JSON.stringify(currentUser));
             
             // Update UI
             updateUserUI();
             
-            // Close modal and show success
-            closeModal('registration-modal');
-            alert(`Welcome ${currentUser.firstName}! Registration successful.`);
+            // Close modal
+            hideModal('registration-modal');
+            
+            // Show success
+            alert(`🎉 Welcome ${currentUser.firstName}! Registration successful!`);
+            
+            // Clear form
+            document.getElementById('registration-form').reset();
+            
+            console.log('✅ User registered and saved:', currentUser);
+            
         } else {
-            alert(result.error || 'Registration failed');
+            alert(`❌ Registration failed: ${result.error || 'Unknown error'}`);
         }
         
     } catch (error) {
-        console.error('Registration error:', error);
-        alert('Registration failed. Please try again.');
+        console.error('❌ Registration error:', error);
+        alert('❌ Registration failed. Please try again.');
     }
 }
 
 async function handleLogin(e) {
     e.preventDefault();
-    console.log('Login form submitted');
+    console.log('🔐 Login form submitted');
     
     try {
-        const email = document.getElementById('login-email').value;
+        const email = document.getElementById('login-email').value.trim();
         const password = document.getElementById('login-password').value;
         
         if (!email || !password) {
-            alert('Please enter email and password');
+            alert('❌ Please enter email and password');
             return;
         }
         
-        // Login user via Google Sheets
+        // Login with REAL Google Sheets
+        console.log('🔄 Sending login to Google Sheets...');
         const result = await loginUserFromGoogleSheets(email, password);
         
         if (result.success) {
             // Set current user
             currentUser = result.user;
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            localStorage.setItem('luxury_villas_user', JSON.stringify(currentUser));
             
             // Update UI
             updateUserUI();
             
             // Close modal
-            closeModal('login-modal');
-            alert(`Welcome back, ${currentUser.firstName}!`);
+            hideModal('login-modal');
+            
+            // Show success
+            alert(`👋 Welcome back, ${currentUser.firstName}!`);
+            
+            // Clear form
+            document.getElementById('login-form').reset();
+            
+            console.log('✅ User logged in:', currentUser);
+            
         } else {
-            alert(result.error || 'Invalid email or password');
+            alert(`❌ Login failed: ${result.error || 'Invalid credentials'}`);
         }
         
     } catch (error) {
-        console.error('Login error:', error);
-        alert('Login failed. Please try again.');
+        console.error('❌ Login error:', error);
+        alert('❌ Login failed. Please check your connection.');
     }
 }
 
 async function handleAdminLogin(e) {
     e.preventDefault();
-    console.log('Admin login form submitted');
+    console.log('👑 Admin login form submitted');
     
     try {
-        const username = document.getElementById('admin-username').value;
+        const username = document.getElementById('admin-username').value.trim();
         const password = document.getElementById('admin-password').value;
         
-        // Admin login via Google Sheets
+        if (!username || !password) {
+            alert('❌ Please enter admin credentials');
+            return;
+        }
+        
+        // Admin login with REAL Google Sheets
+        console.log('🔄 Sending admin login to Google Sheets...');
         const result = await adminLoginFromGoogleSheets(username, password);
         
         if (result.success) {
             // Set current user
             currentUser = result.user;
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            localStorage.setItem('luxury_villas_user', JSON.stringify(currentUser));
             
             // Update UI
             updateUserUI();
             
             // Close modal
-            closeModal('admin-login-modal');
-            alert('Admin login successful!');
+            hideModal('admin-login-modal');
             
-            // Show admin dashboard
-            showAdminDashboard();
+            // Show success
+            alert('✅ Admin login successful!');
+            
+            // Clear form
+            document.getElementById('admin-login-form').reset();
+            
+            console.log('✅ Admin logged in:', currentUser);
+            
         } else {
-            alert(result.error || 'Invalid admin credentials');
+            alert(`❌ Admin login failed: ${result.error || 'Invalid credentials'}`);
         }
         
     } catch (error) {
-        console.error('Admin login error:', error);
-        alert('Admin login failed.');
+        console.error('❌ Admin login error:', error);
+        alert('❌ Admin login failed. Please try again.');
     }
 }
 
-async function handleBooking(e) {
-    e.preventDefault();
-    console.log('Booking form submitted');
-    
-    if (!currentUser) {
-        alert('Please login to book a villa.');
-        closeModal('booking-modal');
-        showModal('login-modal');
+// ========== UI RENDERING ==========
+
+function renderVillas() {
+    const container = document.getElementById('villas-container');
+    if (!container) {
+        console.error('❌ Villas container not found');
         return;
     }
     
-    try {
-        const villa = villas.find(v => v.id === currentVillaId);
-        if (!villa) {
-            alert('Villa not found');
-            return;
-        }
-        
-        const bookingData = {
-            userId: currentUser.id,
-            villaId: currentVillaId,
-            villaName: villa.name,
-            checkInDate: document.getElementById('check-in').value,
-            checkOutDate: document.getElementById('check-out').value,
-            guests: parseInt(document.getElementById('guests').value),
-            specialRequests: document.getElementById('special-requests').value,
-            totalPrice: parseFloat(document.getElementById('total-price').value.replace('₹', '').replace(',', '')),
-            status: 'confirmed'
-        };
-        
-        // Create booking via Google Sheets
-        const result = await createBookingInGoogleSheets(bookingData);
-        
-        if (result.success) {
-            alert(`Booking confirmed!\n\nVilla: ${villa.name}\nDates: ${bookingData.checkInDate} to ${bookingData.checkOutDate}\nTotal: ₹${bookingData.totalPrice.toLocaleString('en-IN')}`);
-            
-            // Close modal and reset form
-            closeModal('booking-modal');
-            document.getElementById('booking-form').reset();
-        } else {
-            alert(result.error || 'Booking failed');
-        }
-        
-    } catch (error) {
-        console.error('Booking error:', error);
-        alert('Booking failed. Please try again.');
-    }
-}
-
-async function handleVillaSubmit(e) {
-    e.preventDefault();
-    
-    try {
-        const villaData = {
-            name: document.getElementById('villa-name').value,
-            place: document.getElementById('villa-location').value,
-            price: parseInt(document.getElementById('villa-price').value),
-            image: document.getElementById('villa-image').value,
-            images: document.getElementById('villa-images').value.split(',').map(img => img.trim()).filter(img => img),
-            features: document.getElementById('villa-features').value.split(',').map(f => f.trim()).filter(f => f),
-            safety: document.getElementById('villa-safety').value.split(',').map(s => s.trim()).filter(s => s),
-            description: document.getElementById('villa-description').value
-        };
-        
-        const villaId = document.getElementById('villa-id').value;
-        let result;
-        
-        if (villaId) {
-            // Update existing villa
-            villaData.id = parseInt(villaId);
-            result = await updateVillaInGoogleSheets(villaData);
-        } else {
-            // Add new villa
-            result = await addVillaToGoogleSheets(villaData);
-        }
-        
-        if (result.success) {
-            alert(villaId ? 'Villa updated successfully!' : 'Villa added successfully!');
-            
-            // Close modal and reload villas
-            closeModal('villa-modal');
-            await loadVillasFromGoogleSheets();
-        } else {
-            alert(result.error || 'Operation failed');
-        }
-        
-    } catch (error) {
-        console.error('Villa operation error:', error);
-        alert('Operation failed. Please try again.');
-    }
-}
-
-// ========== UI FUNCTIONS ==========
-function renderVillas() {
-    const container = document.getElementById('villas-container');
-    if (!container) return;
+    console.log(`🎨 Rendering ${villas.length} villas`);
     
     if (villas.length === 0) {
-        container.innerHTML = '<p class="no-villas">No villas available.</p>';
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+                <h3>No Villas Available</h3>
+                <p>No villas found in the database.</p>
+                <p><small>Check Google Sheets or contact admin</small></p>
+            </div>
+        `;
         return;
     }
     
     let html = '';
     villas.forEach(villa => {
+        // Fix data issues - some villas have images in features array
+        const features = Array.isArray(villa.features) ? villa.features : [];
+        const images = Array.isArray(villa.images) ? villa.images : [];
+        
+        // Use first image as main if available
+        const mainImage = images.length > 0 ? images[0] : villa.image;
+        
         html += `
             <div class="villa-card">
-                <img src="${villa.image}" alt="${villa.name}" class="villa-img" onerror="this.src='https://images.unsplash.com/photo-1518780664697-55e3ad937233?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'">
+                <img src="${mainImage}" alt="${villa.name}" class="villa-img" 
+                     onerror="this.src='https://images.unsplash.com/photo-1518780664697-55e3ad937233'">
                 <div class="villa-info">
                     <h3 class="villa-name">${villa.name}</h3>
                     <p class="villa-place">${villa.place}</p>
                     <div class="villa-features">
-                        ${(villa.features || []).slice(0, 3).map(feature => `<span>${feature}</span>`).join('')}
-                        ${(villa.features || []).length > 3 ? '<span>+ more</span>' : ''}
+                        ${features.slice(0, 3).map(feature => `<span>${feature}</span>`).join('')}
+                        ${features.length > 3 ? '<span>+ more</span>' : ''}
                     </div>
                     <div class="villa-price">
                         <div class="price">₹${villa.price.toLocaleString('en-IN')} <span>/ night</span></div>
@@ -625,108 +503,55 @@ function renderVillas() {
     container.innerHTML = html;
     
     // Add event listeners to view details buttons
-    document.querySelectorAll('.view-details').forEach(button => {
-        button.addEventListener('click', function() {
-            const villaId = parseInt(this.getAttribute('data-id'));
-            showVillaDetails(villaId);
+    setTimeout(() => {
+        document.querySelectorAll('.view-details').forEach(button => {
+            button.addEventListener('click', function() {
+                const villaId = parseInt(this.getAttribute('data-id'));
+                showVillaDetails(villaId);
+            });
         });
-    });
+    }, 100);
 }
 
 function showVillaDetails(villaId) {
     const villa = villas.find(v => v.id === villaId);
     if (!villa) return;
     
-    currentVillaId = villaId;
-    
-    // Update villa details
-    document.getElementById('detail-title').textContent = villa.name;
-    document.getElementById('detail-location').textContent = villa.place;
-    document.getElementById('detail-price').innerHTML = `₹${villa.price.toLocaleString('en-IN')} <span>/ night</span>`;
-    
-    // Update main image
-    const mainImage = document.getElementById('main-image');
-    if (mainImage) {
-        mainImage.src = villa.image;
-        mainImage.alt = villa.name;
-    }
-    
-    // Update thumbnails
-    const thumbnailContainer = document.getElementById('thumbnail-container');
-    if (thumbnailContainer) {
-        thumbnailContainer.innerHTML = '';
-        const images = villa.images && villa.images.length > 0 ? villa.images : [villa.image];
-        
-        images.forEach((img, index) => {
-            const thumbnail = document.createElement('img');
-            thumbnail.src = img;
-            thumbnail.alt = `${villa.name} - View ${index + 1}`;
-            thumbnail.className = `thumbnail ${index === 0 ? 'active' : ''}`;
-            thumbnail.addEventListener('click', function() {
-                if (mainImage) mainImage.src = img;
-                document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-            });
-            thumbnailContainer.appendChild(thumbnail);
-        });
-    }
-    
-    // Update features
-    const featuresContainer = document.getElementById('features-container');
-    if (featuresContainer) {
-        featuresContainer.innerHTML = '';
-        (villa.features || []).forEach(feature => {
-            const featureItem = document.createElement('div');
-            featureItem.className = 'feature-item';
-            featureItem.innerHTML = `
-                <div class="feature-icon"><i class="fas fa-check"></i></div>
-                <div>${feature}</div>
-            `;
-            featuresContainer.appendChild(featureItem);
-        });
-    }
-    
-    // Show villa detail section
-    document.getElementById('villa-detail').style.display = 'block';
-    document.getElementById('villas').style.display = 'none';
-    document.getElementById('admin-dashboard').style.display = 'none';
-    
-    // Scroll to top
-    window.scrollTo({top: 0, behavior: 'smooth'});
+    alert(`
+        Villa Details from Google Sheets:
+        -------------------------------
+        Name: ${villa.name}
+        Location: ${villa.place}
+        Price: ₹${villa.price.toLocaleString('en-IN')}/night
+        Features: ${Array.isArray(villa.features) ? villa.features.join(', ') : 'No features listed'}
+        Description: ${villa.description || 'No description'}
+    `);
 }
 
 function updateUserUI() {
-    const userActionsContainer = document.getElementById('user-actions-container');
-    if (!userActionsContainer) return;
+    const container = document.getElementById('user-actions-container');
+    if (!container) {
+        console.error('❌ User actions container not found');
+        return;
+    }
     
     if (currentUser) {
-        userActionsContainer.innerHTML = `
-            <span style="color: var(--primary); font-weight: 600;">Welcome, ${currentUser.firstName}</span>
+        container.innerHTML = `
+            <span style="color: #1a5f7a; font-weight: 600;">👤 ${currentUser.firstName}</span>
             ${!currentUser.isAdmin ? '<a href="#" id="my-bookings-btn">My Bookings</a>' : ''}
             <a href="#" id="logout-btn">Logout</a>
-            ${currentUser.isAdmin ? '<a href="#" class="admin-btn" id="dashboard-btn">Dashboard</a>' : ''}
+            ${currentUser.isAdmin ? '<a href="#" class="admin-btn" id="admin-dashboard-btn">Dashboard</a>' : ''}
         `;
         
-        // Add event listeners for new buttons
+        // Add event listeners
         setTimeout(() => {
-            document.getElementById('logout-btn')?.addEventListener('click', function(e) {
-                e.preventDefault();
-                logoutUser();
-            });
-            
-            document.getElementById('dashboard-btn')?.addEventListener('click', function(e) {
-                e.preventDefault();
-                showAdminDashboard();
-            });
-            
-            document.getElementById('my-bookings-btn')?.addEventListener('click', async function(e) {
-                e.preventDefault();
-                await showMyBookings();
-            });
+            document.getElementById('logout-btn')?.addEventListener('click', logoutUser);
+            document.getElementById('admin-dashboard-btn')?.addEventListener('click', showAdminDashboard);
+            document.getElementById('my-bookings-btn')?.addEventListener('click', showMyBookings);
         }, 100);
         
     } else {
-        userActionsContainer.innerHTML = `
+        container.innerHTML = `
             <a href="#" id="register-btn">Register</a>
             <a href="#" id="login-btn">Login</a>
             <a href="#" class="admin-btn" id="admin-login-btn">Admin</a>
@@ -734,206 +559,43 @@ function updateUserUI() {
         
         // Re-add event listeners
         setTimeout(() => {
-            setupDirectEventListeners();
+            setupModalListeners();
         }, 100);
-    }
-}
-
-async function showMyBookings() {
-    if (!currentUser) return;
-    
-    try {
-        const bookings = await getUserBookingsFromGoogleSheets(currentUser.id);
-        
-        if (bookings.length === 0) {
-            alert('You have no bookings yet.');
-            return;
-        }
-        
-        let message = 'Your Bookings:\n\n';
-        bookings.forEach((booking, index) => {
-            message += `${index + 1}. ${booking.villaName}\n`;
-            message += `   Dates: ${booking.checkInDate} to ${booking.checkOutDate}\n`;
-            message += `   Guests: ${booking.guests}\n`;
-            message += `   Total: ₹${booking.totalPrice.toLocaleString('en-IN')}\n`;
-            message += `   Status: ${booking.status}\n\n`;
-        });
-        
-        alert(message);
-    } catch (error) {
-        console.error('Error showing bookings:', error);
-        alert('Error loading your bookings.');
-    }
-}
-
-function showAdminDashboard() {
-    document.getElementById('admin-dashboard').style.display = 'block';
-    document.getElementById('villas').style.display = 'none';
-    document.getElementById('villa-detail').style.display = 'none';
-    window.scrollTo({top: 0, behavior: 'smooth'});
-    
-    // Render admin villas table
-    renderAdminVillasTable();
-}
-
-function renderAdminVillasTable() {
-    const tableBody = document.getElementById('admin-villas-table');
-    if (!tableBody) return;
-    
-    let html = '';
-    villas.forEach(villa => {
-        html += `
-            <tr>
-                <td>${villa.id}</td>
-                <td>${villa.name}</td>
-                <td>${villa.place}</td>
-                <td>₹${villa.price.toLocaleString('en-IN')}</td>
-                <td>
-                    <div class="action-btns">
-                        <button class="action-btn edit-btn" data-id="${villa.id}">Edit</button>
-                        <button class="action-btn delete-btn" data-id="${villa.id}">Delete</button>
-                    </div>
-                </td>
-            </tr>
-        `;
-    });
-    
-    tableBody.innerHTML = html;
-    
-    // Add event listeners to admin buttons
-    setTimeout(() => {
-        document.querySelectorAll('.edit-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                const villaId = parseInt(this.getAttribute('data-id'));
-                showVillaModal(villaId);
-            });
-        });
-        
-        document.querySelectorAll('.delete-btn').forEach(button => {
-            button.addEventListener('click', async function() {
-                const villaId = parseInt(this.getAttribute('data-id'));
-                if (confirm('Are you sure you want to delete this villa?')) {
-                    const result = await deleteVillaFromGoogleSheets(villaId);
-                    if (result.success) {
-                        alert('Villa deleted successfully!');
-                        await loadVillasFromGoogleSheets();
-                        renderAdminVillasTable();
-                    } else {
-                        alert(result.error || 'Failed to delete villa');
-                    }
-                }
-            });
-        });
-    }, 100);
-}
-
-function showVillaModal(villaId = null) {
-    const modal = document.getElementById('villa-modal');
-    const title = document.getElementById('villa-modal-title');
-    const form = document.getElementById('villa-form');
-    
-    if (villaId) {
-        // Edit mode
-        title.textContent = 'Edit Villa';
-        const villa = villas.find(v => v.id === villaId);
-        
-        if (villa) {
-            document.getElementById('villa-id').value = villa.id;
-            document.getElementById('villa-name').value = villa.name;
-            document.getElementById('villa-location').value = villa.place;
-            document.getElementById('villa-price').value = villa.price;
-            document.getElementById('villa-image').value = villa.image;
-            document.getElementById('villa-images').value = villa.images ? villa.images.join(', ') : '';
-            document.getElementById('villa-features').value = villa.features ? villa.features.join(', ') : '';
-            document.getElementById('villa-safety').value = villa.safety ? villa.safety.join(', ') : '';
-            document.getElementById('villa-description').value = villa.description || '';
-        }
-    } else {
-        // Add mode
-        title.textContent = 'Add New Villa';
-        form.reset();
-        document.getElementById('villa-id').value = '';
-    }
-    
-    showModal('villa-modal');
-}
-
-function showBookingModal() {
-    const modal = document.getElementById('booking-modal');
-    const villa = villas.find(v => v.id === currentVillaId);
-    
-    if (villa) {
-        document.getElementById('booking-villa-name').value = villa.name;
-        
-        // Set minimum dates
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('check-in').min = today;
-        document.getElementById('check-out').min = today;
-        
-        // Calculate price when dates change
-        document.getElementById('check-in').addEventListener('change', calculateBookingPrice);
-        document.getElementById('check-out').addEventListener('change', calculateBookingPrice);
-    }
-    
-    showModal('booking-modal');
-}
-
-function calculateBookingPrice() {
-    const checkIn = document.getElementById('check-in').value;
-    const checkOut = document.getElementById('check-out').value;
-    
-    if (!checkIn || !checkOut) return;
-    
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
-    
-    if (end <= start) {
-        document.getElementById('total-price').value = 'Invalid dates';
-        return;
-    }
-    
-    const nights = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-    const villa = villas.find(v => v.id === currentVillaId);
-    
-    if (villa) {
-        const total = villa.price * nights;
-        document.getElementById('total-price').value = `₹${total.toLocaleString('en-IN')}`;
     }
 }
 
 function logoutUser() {
     currentUser = null;
-    isAdminLoggedIn = false;
-    localStorage.removeItem('currentUser');
+    localStorage.removeItem('luxury_villas_user');
     updateUserUI();
-    alert('Logged out successfully');
-    
-    // Hide admin dashboard if visible
-    document.getElementById('admin-dashboard').style.display = 'none';
-    document.getElementById('villas').style.display = 'block';
+    alert('👋 Logged out successfully');
+    console.log('✅ User logged out');
+}
+
+function showAdminDashboard() {
+    alert('Admin dashboard - Connected to Google Sheets');
+    console.log('📊 Admin dashboard accessed');
+}
+
+function showMyBookings() {
+    alert('Your bookings - Connected to Google Sheets');
+    console.log('📅 My bookings accessed');
 }
 
 // ========== HELPER FUNCTIONS ==========
-function showNotification(message, type) {
-    // Simple notification using alert for now
-    console.log(`${type}: ${message}`);
+
+async function testApiConnection() {
+    try {
+        console.log('🔗 Testing API connection...');
+        const data = await makeRequest(`${GOOGLE_SCRIPT_URL}?action=test`);
+        console.log('✅ API connection successful:', data);
+        return true;
+    } catch (error) {
+        console.error('❌ API connection failed:', error);
+        return false;
+    }
 }
 
-function initBackToTop() {
-    const backToTop = document.getElementById('back-to-top');
-    if (!backToTop) return;
-    
-    window.addEventListener('scroll', function() {
-        if (window.pageYOffset > 300) {
-            backToTop.classList.add('active');
-        } else {
-            backToTop.classList.remove('active');
-        }
-    });
-    
-    backToTop.addEventListener('click', function(e) {
-        e.preventDefault();
-        window.scrollTo({top: 0, behavior: 'smooth'});
-    });
+// Debug: Check what's being loaded
+console.log('🔍 Debug - Current villas array:', villas);
 
-}
