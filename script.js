@@ -1,7 +1,7 @@
 
 // ======================================================
 
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz4lwPh5ji4m3uLZq2xj5RU7SIjL4Tbu1tBrvwvnbHunzOV30jFJMUWfLAOS0PbvQVnww/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzN-iZVrEBz8h_YI0z6n5UENBlkNt7tGfkYGX_ox468KGZOjjl31S2jGv9WBM74bZi67Q/exec';
 
 // Global variables
 let villas = [];
@@ -597,5 +597,6 @@ setTimeout(() => {
     console.log('Current villas:', villas);
     console.log('Villas loaded from Google Sheets:', villas.length);
 }, 2000);
+
 
 
