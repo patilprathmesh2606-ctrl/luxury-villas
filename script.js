@@ -1,5 +1,5 @@
 // Google Sheets API Configuration
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwkzujgDSl9UDoKwdiGFLH1ibhorHpnGtUNgBCPem8i7M9UaS6-nM3vGcDmhuAU350xGw/exec'; // Replace with your Web App URL
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz4lwPh5ji4m3uLZq2xj5RU7SIjL4Tbu1tBrvwvnbHunzOV30jFJMUWfLAOS0PbvQVnww/exec'; // Replace with your Web App URL
 
 // Global Variables
 let villas = [];
@@ -935,4 +935,5 @@ function initBackToTop() {
         e.preventDefault();
         window.scrollTo({top: 0, behavior: 'smooth'});
     });
+
 }
