@@ -370,3 +370,4 @@ window.debugVillas = function() {
     console.log('Villa count:', villas.length);
     alert(`Villas loaded: ${villas.length}\n\nCheck console for details.`);
 };
+
